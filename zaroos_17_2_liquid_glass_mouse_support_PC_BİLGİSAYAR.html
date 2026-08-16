@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZaroOS 17.2 - Mouse Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Share+Tech+Mono&display=swap');
+        body { font-family: 'Roboto', sans-serif; user-select: none; overflow: hidden; }
+        .twrp-font { font-family: 'Share Tech Mono', monospace; }
+        .app-icon { transition: transform 0.05s ease; cursor: pointer; will-change: transform; }
+        .app-icon:active { transform: scale(0.85); }
+        .window-fade { animation: fadeIn 0.08s cubic-bezier(0, 0, 0.2, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        
+        #launcher-viewport {
+            display: flex;
+            width: 500%;
+            height: 100%;
+            transition: transform 0.15s cubic-bezier(0, 0, 0.2, 1);
+            will-change: transform;
+            cursor: grab;
+        }
+        #launcher-viewport:active {
+            cursor: grabbing;
+        }
+        .launcher-page {
+            width: 20%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        #notification-panel {
+            transition: transform 0.15s ease-out;
+            transform: translateY(-100%);
+        }
+        #notification-panel.show {
+            transform: translateY(0);
+        }
+
+        .recent-card {
+            transition: transform 0.1s ease, opacity 0.1s ease;
+        }
+
+        /* LIQUID GLASS EFEKTİ SINIFI */
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.12) !important;
+            backdrop-filter: blur(25px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+        }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 4px; }
+    </style>
+</head>
+<body id="os-body" class="bg-zinc-950 text-white h-screen w-screen overflow-hidden flex flex-col justify-between bg-cover bg-center relative">
+
+    <div id="brightness-overlay" class="absolute inset-0 bg-black pointer-events-none z-[100] transition-opacity duration-200" style="opacity: 0;"></div>
+
+    <div id="status-bar-header" class="w-full h-7 bg-black/60 backdrop-blur-md px-3 flex justify-between items-center text-xs font-medium z-50 text-zinc-100 cursor-pointer">
+        <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-signal text-[10px]"></i>
+            <span class="text-[11px] font-semibold">TURKCELL</span>
+            <i class="fa-solid fa-4g text-[10px] text-sky-400"></i>
+        </div>
+        <div id="status-clock" class="text-xs font-medium">16:25</div>
+        <div class="flex items-center space-x-2 text-xs">
+            <i id="notif-wifi-icon" class="fa-solid fa-wifi text-[11px] text-emerald-400"></i>
+            <span id="battery-text">%88</span>
+            <i class="fa-solid fa-battery-three-quarters text-emerald-400 text-[11px]"></i>
+        </div>
+    </div>
+
+    <button onclick="togglePowerMenu()" class="absolute bottom-14 left-4 z-50 bg-zinc-900/80 backdrop-blur-md border border-zinc-700 w-10 h-10 rounded-full flex items-center justify-center text-red-400 shadow-xl cursor-pointer hover:bg-zinc-800 transition">
+        <i class="fa-solid fa-power-off text-sm"></i>
+    </button>
+
+    <button onclick="powerButtonPress()" class="absolute top-2 right-2 z-[160] bg-zinc-800 border border-zinc-600 px-2 py-1 rounded text-[9px] text-zinc-300 cursor-pointer shadow-md hover:bg-zinc-700">
+        <i class="fa-solid fa-power-off"></i> Güç Tuşu
+    </button>
+
+    <div id="notification-panel" class="app-ui-panel absolute top-7 left-0 right-0 bg-zinc-900/95 backdrop-blur-2xl z-[80] p-4 flex flex-col space-y-4 border-b border-zinc-800 shadow-2xl rounded-b-3xl">
+        <div class="grid grid-cols-4 gap-3 text-center">
+            <div onclick="toggleQuickSetting('wifi')" id="qs-wifi" class="bg-emerald-600 p-3 rounded-2xl flex flex-col items-center gap-1 cursor-pointer transition">
+                <i class="fa-solid fa-wifi text-sm"></i>
+                <span class="text-[10px] font-bold">Wi-Fi</span>
+            </div>
+            <div onclick="toggleQuickSetting('location')" id="qs-location" class="bg-zinc-800 p-3 rounded-2xl flex flex-col items-center gap-1 cursor-pointer transition">
+                <i class="fa-solid fa-location-dot text-sm"></i>
+                <span class="text-[10px] font-bold">Konum</span>
+            </div>
+            <div onclick="toggleQuickSetting('bluetooth')" id="qs-bluetooth" class="bg-zinc-800 p-3 rounded-2xl flex flex-col items-center gap-1 cursor-pointer transition">
+                <i class="fa-brands fa-bluetooth text-sm"></i>
+                <span class="text-[10px] font-bold">Bluetooth</span>
+            </div>
+            <div onclick="toggleQuickSetting('flashlight')" id="qs-flashlight" class="bg-zinc-800 p-3 rounded-2xl flex flex-col items-center gap-1 cursor-pointer transition">
+                <i class="fa-solid fa-bolt text-sm"></i>
+                <span class="text-[10px] font-bold">Fener</span>
+            </div>
+        </div>
+        <div class="border-t border-zinc-800 pt-3 space-y-2">
+            <div class="text-[11px] font-bold text-zinc-400">Bildirimler</div>
+            <div id="notification-list" class="space-y-2 max-h-36 overflow-y-auto">
+                <div class="bg-zinc-800/80 p-2.5 rounded-xl text-xs space-y-0.5 border border-zinc-700">
+                    <div class="flex justify-between font-bold text-sky-400"><span>ZaroOS v17.2</span><span class="text-[9px] text-zinc-400">Şimdi</span></div>
+                    <div class="text-[11px] text-zinc-200">Mouse ile sayfaları tutup kaydırma desteği eklendi!</div>
+                </div>
+            </div>
+        </div>
+        <button onclick="toggleNotificationPanel()" class="text-center text-xs text-zinc-500 font-bold py-1 cursor-pointer">Kapat ▲</button>
+    </div>
+
+    <div id="wallpaper-menu" class="hidden absolute inset-0 bg-black/60 backdrop-blur-md z-[70] flex items-center justify-center window-fade">
+        <div class="app-ui-panel bg-zinc-900 border border-zinc-800 p-6 rounded-3xl w-80 text-center space-y-4 shadow-2xl">
+            <h3 class="font-bold text-sm text-zinc-300">Duvar Kağıdını Değiştir</h3>
+            <div id="wallpaper-options-grid" class="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto p-1"></div>
+            <button onclick="document.getElementById('wallpaper-menu').classList.add('hidden')" class="w-full bg-zinc-800 py-2.5 rounded-xl text-xs font-bold cursor-pointer">İptal</button>
+        </div>
+    </div>
+
+    <div id="power-menu" class="hidden absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center window-fade">
+        <div class="app-ui-panel bg-zinc-900 border border-zinc-800 p-6 rounded-3xl w-72 text-center space-y-3 shadow-2xl">
+            <h3 class="font-bold text-sm text-zinc-300">Güç Seçenekleri</h3>
+            <button onclick="powerOffDevice()" class="w-full bg-red-600/80 hover:bg-red-600 p-3 rounded-2xl font-medium text-xs flex items-center justify-center gap-2 cursor-pointer text-white"><i class="fa-solid fa-power-off"></i> Kapat (Shut Down)</button>
+            <button onclick="lockScreen()" class="w-full bg-zinc-800 hover:bg-zinc-700 p-3 rounded-2xl font-medium text-xs flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-lock text-amber-400"></i> Kilit Ekranı</button>
+            <button onclick="openApp('twrp'); togglePowerMenu();" class="w-full bg-zinc-800 hover:bg-zinc-700 p-3 rounded-2xl font-medium text-xs flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-screwdriver-wrench text-blue-400"></i> Recovery (TWRP)</button>
+            <button onclick="restartDeviceAnim()" class="w-full bg-zinc-800 hover:bg-zinc-700 p-3 rounded-2xl font-medium text-xs flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-rotate-right text-sky-400"></i> Yeniden Başlat</button>
+            <button onclick="togglePowerMenu()" class="w-full bg-zinc-800 text-zinc-400 p-2.5 rounded-2xl text-xs cursor-pointer">İptal</button>
+        </div>
+    </div>
+
+    <div id="off-screen-overlay" class="hidden absolute inset-0 bg-black z-[180] flex flex-col items-center justify-center text-center cursor-pointer" onclick="powerButtonPress()">
+        <div class="text-zinc-600 text-xs animate-pulse">Ekranı uyandırmak için sağ üstteki [Güç Tuşu] na basın</div>
+    </div>
+
+    <div id="boot-screen" class="hidden absolute inset-0 bg-black z-50 flex flex-col items-center justify-center text-center">
+        <div id="boot-content" class="flex flex-col items-center space-y-4">
+            <div id="boot-os-title" class="text-3xl font-black text-blue-500 tracking-wider">ZaroOS</div>
+            <div class="w-32 bg-zinc-800 h-1 rounded-full overflow-hidden">
+                <div class="bg-blue-500 h-full w-full animate-pulse"></div>
+            </div>
+            <div class="text-[10px] text-zinc-500 tracking-widest uppercase">Powered by Android</div>
+        </div>
+    </div>
+
+    <div id="lock-screen-overlay" class="hidden absolute inset-0 bg-cover bg-center z-50 flex flex-col justify-between p-8 backdrop-blur-xl bg-black/40 window-fade">
+        <div class="text-center mt-12">
+            <div id="lock-clock" class="text-5xl font-light">16:25</div>
+            <div class="text-xs text-zinc-300 mt-1">16 Ağustos Pazar</div>
+        </div>
+        <div class="max-w-xs mx-auto w-full text-center space-y-4 bg-black/40 p-6 rounded-3xl backdrop-blur-md border border-white/10">
+            <div id="lock-info-text" class="text-xs text-zinc-300">Kilidi açmak için kaydırın</div>
+            <div>
+                <button onclick="handleUnlockAction()" class="w-full bg-white/20 hover:bg-white/30 py-3 rounded-2xl font-medium text-xs backdrop-blur-sm transition border border-white/20 cursor-pointer flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-angles-right text-emerald-400"></i> Kilidi Aç / Kaydır
+                </button>
+            </div>
+        </div>
+        <div class="text-center text-[10px] text-zinc-400">ZaroOS Güvenlik Koruması Aktif</div>
+    </div>
+
+    <div id="launcher-viewport" class="flex-1 relative z-10">
+        
+        <div class="launcher-page">
+            <div class="max-w-md mx-auto w-full mt-2">
+                <div class="bg-white/90 backdrop-blur-md rounded-full px-5 py-3 flex items-center gap-3 shadow-lg text-zinc-800">
+                    <i class="fa-brands fa-google text-blue-600"></i>
+                    <input type="text" placeholder="Google'da ara..." class="w-full bg-transparent outline-none text-sm placeholder-zinc-500" onkeypress="if(event.key === 'Enter') { openApp('browser'); }">
+                    <i class="fa-solid fa-microphone text-blue-600"></i>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 gap-4 max-w-md mx-auto mb-12">
+                <div onclick="openApp('gemini')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Gemini</span>
+                </div>
+                <div onclick="openApp('whatsapp')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-emerald-500 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-brands fa-whatsapp"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">WhatsApp</span>
+                </div>
+                <div onclick="openApp('messages')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-blue-500 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-comment-dots"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Mesajlar</span>
+                </div>
+                <div onclick="openApp('contacts')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-cyan-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-address-book"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Rehber</span>
+                </div>
+                <div onclick="openApp('twrp')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-blue-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">TWRP</span>
+                </div>
+                <div onclick="openApp('store')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-gradient-to-tr from-blue-600 via-emerald-500 to-amber-500 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-play"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Play Store</span>
+                </div>
+                <div onclick="openApp('minecraft')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-emerald-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-cube"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Minecraft</span>
+                </div>
+                <div onclick="openApp('sfg2')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-red-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-crosshairs"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">SFG 2</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="launcher-page">
+            <div class="max-w-md mx-auto w-full mt-6 text-center text-xs text-zinc-300 font-bold uppercase tracking-widest">Medya ve Araçlar</div>
+            <div class="grid grid-cols-4 gap-4 max-w-md mx-auto mb-12">
+                <div onclick="openApp('doom')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-orange-700 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-skull"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">DOOM</span>
+                </div>
+                <div onclick="openApp('phone')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-teal-500 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-phone"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Telefon</span>
+                </div>
+                <div onclick="openApp('browser')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-indigo-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-globe"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Google</span>
+                </div>
+                <div onclick="openApp('settings')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-zinc-700 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-gear"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Ayarlar</span>
+                </div>
+                <div onclick="openApp('camera')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-zinc-800 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-camera"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Kamera</span>
+                </div>
+                <div onclick="openApp('gallery')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-amber-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-images"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Galeri</span>
+                </div>
+                <div onclick="openApp('notes')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-yellow-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-note-sticky"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Notlar</span>
+                </div>
+                <div onclick="openApp('calculator')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-purple-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-calculator"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Hesap Mak.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="launcher-page">
+            <div class="max-w-md mx-auto w-full mt-6 text-center text-xs text-zinc-300 font-bold uppercase tracking-widest">Sistem Araçları</div>
+            <div class="grid grid-cols-4 gap-4 max-w-md mx-auto mb-12">
+                <div onclick="openApp('music')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-rose-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-music"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Müzik</span>
+                </div>
+                <div onclick="openApp('weather')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-sky-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-cloud-sun"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Hava Durumu</span>
+                </div>
+                <div onclick="openApp('cpu_monitor')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-emerald-700 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-microchip"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">CPU / RAM</span>
+                </div>
+                <div onclick="openApp('file_manager')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-amber-700 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-folder-open"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Dosyalar</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="launcher-page">
+            <div class="max-w-md mx-auto w-full mt-6 text-center text-xs text-zinc-300 font-bold uppercase tracking-widest">Sosyal Medya</div>
+            <div class="grid grid-cols-4 gap-4 max-w-md mx-auto mb-12">
+                <div onclick="openApp('twitter')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-black border border-zinc-700 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-brands fa-x-twitter"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Twitter</span>
+                </div>
+                <div onclick="openApp('reddit')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-orange-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-brands fa-reddit-alien"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Reddit</span>
+                </div>
+                <div onclick="openApp('spotify')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-emerald-600 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-brands fa-spotify"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Spotify</span>
+                </div>
+                <div onclick="openApp('netflix')" class="flex flex-col items-center cursor-pointer group">
+                    <div class="app-icon w-14 h-14 bg-red-700 rounded-2xl shadow-lg flex items-center justify-center text-2xl text-white"><i class="fa-solid fa-film"></i></div>
+                    <span class="text-xs mt-1.5 font-medium drop-shadow-md">Netflix</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="launcher-page bg-zinc-950/80 backdrop-blur-xl">
+            <div class="max-w-md mx-auto w-full mt-4">
+                <div class="text-lg font-bold text-white mb-3">Uygulama Arşivi</div>
+                <div class="space-y-4 overflow-y-auto max-h-[70vh] pr-1">
+                    <div class="bg-zinc-900/80 p-3 rounded-2xl border border-zinc-800">
+                        <div class="text-[11px] font-bold text-zinc-400 mb-2">Tüm Sistem Uygulamaları</div>
+                        <div class="grid grid-cols-3 gap-3 text-center text-xs">
+                            <div onclick="openApp('gemini')" class="cursor-pointer p-2 bg-blue-900/40 rounded-xl">Gemini</div>
+                            <div onclick="openApp('camera')" class="cursor-pointer p-2 bg-zinc-800 rounded-xl">Kamera</div>
+                            <div onclick="openApp('gallery')" class="cursor-pointer p-2 bg-zinc-800 rounded-xl">Galeri</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="absolute bottom-14 left-0 right-0 flex justify-center items-center gap-2 z-20 pointer-events-none">
+        <div id="dot-0" onclick="goToPage(0)" class="w-4 h-2 rounded-full bg-white transition-all pointer-events-auto cursor-pointer"></div>
+        <div id="dot-1" onclick="goToPage(1)" class="w-2 h-2 rounded-full bg-white/40 transition-all pointer-events-auto cursor-pointer"></div>
+        <div id="dot-2" onclick="goToPage(2)" class="w-2 h-2 rounded-full bg-white/40 transition-all pointer-events-auto cursor-pointer"></div>
+        <div id="dot-3" onclick="goToPage(3)" class="w-2 h-2 rounded-full bg-white/40 transition-all pointer-events-auto cursor-pointer"></div>
+        <div id="dot-4" onclick="goToPage(4)" class="w-2 h-2 rounded-full bg-white/40 transition-all pointer-events-auto cursor-pointer"></div>
+    </div>
+
+    <div id="recent-apps-screen" class="hidden absolute inset-0 bg-black/70 backdrop-blur-xl z-[90] p-6 flex flex-col justify-between window-fade">
+        <div class="text-center text-xs font-semibold text-zinc-300 mt-2">Son Kullanılan Uygulamalar</div>
+        <div id="recent-cards-container" class="flex gap-4 overflow-x-auto py-4 items-center justify-center flex-1"></div>
+        <div class="flex justify-center gap-4">
+            <button onclick="clearAllRecent()" class="bg-red-600/80 hover:bg-red-600 px-5 py-2 rounded-xl text-xs font-bold cursor-pointer transition">Tümünü Temizle</button>
+            <button onclick="closeRecentApps()" class="bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-xl text-xs font-bold cursor-pointer transition">Kapat</button>
+        </div>
+    </div>
+
+    <div class="w-full h-12 bg-black/60 backdrop-blur-md flex justify-around items-center z-50 text-zinc-300">
+        <button onclick="goHome()" class="p-2 hover:text-white transition cursor-pointer"><i class="fa-solid fa-caret-left text-lg"></i></button>
+        <button onclick="goHome()" class="p-2 hover:text-white transition cursor-pointer"><i class="fa-solid fa-circle text-xs"></i></button>
+        <button onclick="openRecentApps()" class="p-2 hover:text-white transition cursor-pointer"><i class="fa-solid fa-square text-xs"></i></button>
+    </div>
+
+    <div id="app-layer" class="hidden absolute inset-0 top-7 bottom-12 bg-zinc-950 z-40 window-fade flex flex-col"></div>
+
+    <script>
+        let battery = 88;
+        let recentAppsList = [];
+        let currentOS = "ZaroOS v17.2";
+        let quickSettingsState = { wifi: true, location: false, bluetooth: false, flashlight: false };
+        let currentPage = 0;
+        let liquidGlassActive = false;
+        
+        let galleryPhotos = [
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=800&q=80"
+        ];
+        let userNotes = ["ZaroOS v17.2: Mouse sürükleme ve Liquid Glass aktif."];
+        let defaultWallpapers = [
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+            "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1920&q=80",
+            "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=1920&q=80"
+        ];
+
+        document.getElementById('os-body').style.backgroundImage = `url('${defaultWallpapers[0]}')`;
+        document.getElementById('lock-screen-overlay').style.backgroundImage = `url('${defaultWallpapers[0]}')`;
+
+        // MOUSE VE DOKUNMATİK DESTEKLİ SAYFA KAYDIRMA (DRAG & SWIPE)
+        const viewport = document.getElementById('launcher-viewport');
+        let isDragging = false;
+        let startX = 0;
+        let currentTranslate = 0;
+
+        viewport.addEventListener('mousedown', (e) => {
+            if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+            isDragging = true;
+            startX = e.clientX;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let currentX = e.clientX;
+            let diff = currentX - startX;
+            if (Math.abs(diff) > 80) {
+                if (diff < 0 && currentPage < 4) currentPage++;
+                if (diff > 0 && currentPage > 0) currentPage--;
+                updateLauncherPage();
+                isDragging = false;
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        // Touch desteği
+        viewport.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; });
+        viewport.addEventListener('touchend', (e) => {
+            let diff = e.changedTouches[0].clientX - startX;
+            if(Math.abs(diff) > 50) {
+                if(diff < 0 && currentPage < 4) currentPage++;
+                if(diff > 0 && currentPage > 0) currentPage--;
+                updateLauncherPage();
+            }
+        });
+
+        function goToPage(page) {
+            currentPage = page;
+            updateLauncherPage();
+        }
+
+        function updateLauncherPage() {
+            viewport.style.transform = `translateX(-${currentPage * 20}%)`;
+            for(let i=0; i<5; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if(i === currentPage) {
+                    dot.className = "w-4 h-2 rounded-full bg-white transition-all pointer-events-auto cursor-pointer";
+                } else {
+                    dot.className = "w-2 h-2 rounded-full bg-white/40 transition-all pointer-events-auto cursor-pointer";
+                }
+            }
+        }
+
+        document.getElementById('status-bar-header').onclick = () => {
+            document.getElementById('notification-panel').classList.toggle('show');
+        };
+
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('status-clock').innerText = timeStr;
+            document.getElementById('lock-clock').innerText = timeStr;
+        }, 1000);
+
+        function powerOffDevice() {
+            document.getElementById('power-menu').classList.add('hidden');
+            document.getElementById('app-layer').classList.add('hidden');
+            document.getElementById('off-screen-overlay').classList.remove('hidden');
+        }
+
+        function powerButtonPress() {
+            const offScreen = document.getElementById('off-screen-overlay');
+            if(!offScreen.classList.contains('hidden')) {
+                offScreen.classList.add('hidden');
+                restartDeviceAnim();
+            } else {
+                lockScreen();
+            }
+        }
+
+        function toggleNotificationPanel() {
+            document.getElementById('notification-panel').classList.toggle('show');
+        }
+
+        function toggleQuickSetting(key) {
+            quickSettingsState[key] = !quickSettingsState[key];
+            const el = document.getElementById('qs-' + key);
+            if(quickSettingsState[key]) {
+                el.className = "bg-emerald-600 p-3 rounded-2xl flex flex-col items-center gap-1 cursor-pointer transition";
+            } else {
+                el.className = "bg-zinc-800 p-3 rounded-2xl flex flex-col items-center gap-1 cursor-pointer transition";
+            }
+            if(key === 'wifi') {
+                document.getElementById('notif-wifi-icon').style.display = quickSettingsState[key] ? 'inline' : 'none';
+            }
+        }
+
+        function openWallpaperMenu() {
+            const grid = document.getElementById('wallpaper-options-grid');
+            grid.innerHTML = defaultWallpapers.map(url => `
+                <div onclick="setWallpaper('${url}')" class="h-20 bg-cover bg-center rounded-xl cursor-pointer border-2 border-emerald-500 shadow" style="background-image: url('${url}')"></div>
+            `).join('') + galleryPhotos.map(url => `
+                <div onclick="setWallpaper('${url}')" class="h-20 bg-cover bg-center rounded-xl cursor-pointer border-2 border-amber-500 shadow" style="background-image: url('${url}')"></div>
+            `).join('');
+            document.getElementById('wallpaper-menu').classList.remove('hidden');
+        }
+
+        function setWallpaper(url) {
+            document.getElementById('os-body').style.backgroundImage = `url('${url}')`;
+            document.getElementById('lock-screen-overlay').style.backgroundImage = `url('${url}')`;
+            document.getElementById('wallpaper-menu').classList.add('hidden');
+        }
+
+        function togglePowerMenu() {
+            document.getElementById('power-menu').classList.toggle('hidden');
+        }
+
+        function lockScreen() {
+            togglePowerMenu();
+            document.getElementById('lock-screen-overlay').classList.remove('hidden');
+        }
+
+        function handleUnlockAction() {
+            document.getElementById('lock-screen-overlay').classList.add('hidden');
+        }
+
+        function restartDeviceAnim() {
+            togglePowerMenu();
+            const bootScreen = document.getElementById('boot-screen');
+            bootScreen.classList.remove('hidden');
+            setTimeout(() => {
+                bootScreen.classList.add('hidden');
+                goHome();
+            }, 1000);
+        }
+
+        function addToRecent(appId) {
+            if(!recentAppsList.includes(appId)) {
+                recentAppsList.unshift(appId);
+                if(recentAppsList.length > 5) recentAppsList.pop();
+            }
+        }
+
+        function openRecentApps() {
+            const container = document.getElementById('recent-cards-container');
+            container.innerHTML = "";
+            if(recentAppsList.length === 0) {
+                container.innerHTML = `<div class="text-xs text-zinc-400">Son kullanılan uygulama yok.</div>`;
+            } else {
+                recentAppsList.forEach((id, idx) => {
+                    container.innerHTML += `
+                        <div class="recent-card bg-zinc-900 border border-zinc-700 w-32 h-44 rounded-2xl p-4 flex flex-col justify-between items-center cursor-pointer shadow-2xl relative">
+                            <button onclick="removeRecent(${idx})" class="absolute top-2 right-2 text-zinc-500 hover:text-red-400 text-xs"><i class="fa-solid fa-xmark"></i></button>
+                            <div onclick="openApp('${id}'); closeRecentApps();" class="flex-1 flex flex-col items-center justify-center w-full">
+                                <i class="fa-solid fa-mobile-screen text-2xl text-emerald-400 mb-2"></i>
+                                <span class="text-xs font-bold uppercase">${id}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('recent-apps-screen').classList.remove('hidden');
+        }
+
+        function removeRecent(index) {
+            recentAppsList.splice(index, 1);
+            openRecentApps();
+        }
+
+        function clearAllRecent() {
+            recentAppsList = [];
+            openRecentApps();
+        }
+
+        function closeRecentApps() {
+            document.getElementById('recent-apps-screen').classList.add('hidden');
+        }
+
+        // UYGULAMA AÇMA MOTORU
+        function openApp(appId) {
+            addToRecent(appId);
+            const layer = document.getElementById('app-layer');
+            layer.classList.remove('hidden');
+            layer.innerHTML = "";
+
+            let panelClass = liquidGlassActive ? "liquid-glass text-white" : "bg-zinc-900 text-white";
+
+            if(appId === 'twrp') {
+                layer.innerHTML = `
+                    <div class="h-full bg-zinc-950 text-amber-500 twrp-font flex flex-col justify-between">
+                        <div class="bg-zinc-900 p-3 flex justify-between items-center border-b border-zinc-800 text-xs">
+                            <span class="font-bold text-sm text-amber-400"><i class="fa-solid fa-screwdriver-wrench"></i> TeamWin Recovery v3.7.0</span>
+                            <button onclick="goHome()" class="text-zinc-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 p-6 max-w-sm mx-auto w-full my-auto text-center">
+                            <button onclick="twrpAction('Install')" class="bg-zinc-900 hover:bg-zinc-800 border border-amber-600/50 p-5 rounded-xl flex flex-col items-center gap-1 cursor-pointer transition"><i class="fa-solid fa-download text-xl text-amber-400"></i><span class="text-xs font-bold text-white">Install</span></button>
+                            <button onclick="twrpAction('Wipe')" class="bg-zinc-900 hover:bg-zinc-800 border border-amber-600/50 p-5 rounded-xl flex flex-col items-center gap-1 cursor-pointer transition"><i class="fa-solid fa-broom text-xl text-amber-400"></i><span class="text-xs font-bold text-white">Wipe (Reset)</span></button>
+                            <button onclick="twrpAction('Backup')" class="bg-zinc-900 hover:bg-zinc-800 border border-amber-600/50 p-5 rounded-xl flex flex-col items-center gap-1 cursor-pointer transition"><i class="fa-solid fa-floppy-disk text-xl text-amber-400"></i><span class="text-xs font-bold text-white">Backup</span></button>
+                            <button onclick="twrpAction('Reboot')" class="bg-zinc-900 hover:bg-zinc-800 border border-amber-600/50 p-5 rounded-xl flex flex-col items-center gap-1 cursor-pointer transition"><i class="fa-solid fa-power-off text-xl text-amber-400"></i><span class="text-xs font-bold text-white">Reboot</span></button>
+                        </div>
+                        <div id="twrp-console" class="bg-black border-t border-zinc-800 p-3 text-[11px] text-emerald-400 h-28 overflow-y-auto space-y-1">
+                            <div>[TWRP] Recovery aktif. Cihaz: ZaroTech X</div>
+                        </div>
+                    </div>
+                `;
+            } else if(appId === 'gemini') {
+                layer.innerHTML = `
+                    <div class="h-full ${panelClass} flex flex-col justify-between p-6">
+                        <div class="flex justify-between items-center p-3 rounded-xl border border-white/10">
+                            <span class="font-bold text-sm text-blue-400"><i class="fa-solid fa-wand-magic-sparkles"></i> Gemini Asistan</span>
+                            <button onclick="goHome()" class="text-zinc-400 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
+                        <div class="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
+                            <div class="bg-blue-950/60 p-3 rounded-2xl border border-blue-900 text-blue-100">
+                                Merhaba kanka! Artık bilgisayarda mouse ile tutup sayfaları kaydırabilirsin!
+                            </div>
+                        </div>
+                        <div class="p-3 border-t border-white/10 flex gap-2">
+                            <input type="text" placeholder="Gemini'ye sorun..." class="flex-1 bg-black/40 border border-white/20 rounded-xl px-4 py-2 text-xs outline-none text-white">
+                            <button onclick="alert('Gemini yanıtlıyor: Mouse desteği harika oldu!')" class="bg-blue-600 px-4 rounded-xl text-xs font-bold cursor-pointer"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                `;
+            } else if(appId === 'settings') {
+                layer.innerHTML = `
+                    <div class="h-full ${panelClass} flex flex-col">
+                        <div class="p-4 flex justify-between items-center border-b border-white/10">
+                            <span class="font-bold text-sm">Ayarlar</span>
+                            <button onclick="goHome()" class="text-zinc-400 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
+                        <div id="settings-main" class="p-4 space-y-2 flex-1 overflow-y-auto text-xs">
+                            <div onclick="openWallpaperMenu(); goHome();" class="bg-black/30 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-black/40 border border-white/10"><span>Duvar Kağıdı Değiştir</span><i class="fa-solid fa-chevron-right text-[10px]"></i></div>
+                            <div class="bg-black/30 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-black/40 border border-white/10" onclick="toggleLiquidGlassSetting()">
+                                <div>
+                                    <div class="font-bold text-sm">Liquid Glass (Sıvı Cam Efekti)</div>
+                                    <div class="text-[10px] text-zinc-400">iPhone tarzı şeffaf cam yansımaları</div>
+                                </div>
+                                <div id="liquid-glass-badge" class="px-3 py-1 rounded-xl text-xs font-bold ${liquidGlassActive ? 'bg-emerald-600 text-white' : 'bg-zinc-700 text-zinc-300'}">
+                                    ${liquidGlassActive ? 'AÇIK' : 'KAPALI'}
+                                </div>
+                            </div>
+                            <div onclick="openSettingPage('display')" class="bg-black/30 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-black/40 border border-white/10"><span>Ekran Parlaklığı</span><i class="fa-solid fa-chevron-right text-[10px]"></i></div>
+                            <div onclick="openSettingPage('about')" class="bg-black/30 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-black/40 border border-white/10"><span>Telefon Hakkında</span><i class="fa-solid fa-chevron-right text-[10px]"></i></div>
+                        </div>
+                        <div id="setting-page-content" class="hidden p-6 text-xs space-y-4 flex-1 overflow-y-auto">
+                            <button onclick="backToSettingsMain()" class="text-emerald-400 font-semibold mb-2 flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Geri Dön</button>
+                            <div id="setting-dynamic-body"></div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                layer.innerHTML = `
+                    <div class="h-full ${panelClass} flex flex-col items-center justify-center p-6 text-center space-y-4">
+                        <div class="text-3xl text-emerald-400"><i class="fa-solid fa-gamepad"></i></div>
+                        <div class="font-bold text-sm">${appId.toUpperCase()} Uygulaması</div>
+                        <button onclick="goHome()" class="bg-white/10 px-4 py-2 rounded-xl text-xs cursor-pointer font-bold">Ana Ekrana Dön</button>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleLiquidGlassSetting() {
+            liquidGlassActive = !liquidGlassActive;
+            const badge = document.getElementById('liquid-glass-badge');
+            if(liquidGlassActive) {
+                badge.className = "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-600 text-white";
+                badge.innerText = "AÇIK";
+            } else {
+                badge.className = "px-3 py-1 rounded-xl text-xs font-bold bg-zinc-700 text-zinc-300";
+                badge.innerText = "KAPALI";
+            }
+        }
+
+        function twrpAction(action) {
+            const consoleBox = document.getElementById('twrp-console');
+            if(action === 'Wipe') {
+                consoleBox.innerHTML += `<br>[TWRP] Wipe Data başarılı!`;
+            } else if(action === 'Reboot') {
+                setTimeout(() => restartDeviceAnim(), 800);
+            }
+        }
+
+        function goHome() {
+            document.getElementById('app-layer').classList.add('hidden');
+            document.getElementById('app-layer').innerHTML = "";
+            document.getElementById('notification-panel').classList.remove('show');
+            document.getElementById('wallpaper-menu').classList.add('hidden');
+            document.getElementById('recent-apps-screen').classList.add('hidden');
+        }
+
+        function openSettingPage(page) {
+            document.getElementById('settings-main').classList.add('hidden');
+            const content = document.getElementById('setting-page-content');
+            content.classList.remove('hidden');
+            const body = document.getElementById('setting-dynamic-body');
+            
+            if(page === 'display') {
+                body.innerHTML = `<b>Ekran Parlaklığı</b><input type="range" min="0" max="80" value="0" class="w-full accent-emerald-500 cursor-pointer mt-2" oninput="document.getElementById('brightness-overlay').style.opacity = this.value/100">`;
+            } else if(page === 'about') {
+                body.innerHTML = `<div>Cihaz: ZaroTech Phone X</div><div>Aktif ROM: ${currentOS}</div><div class="text-emerald-400 font-bold mt-1">Mouse & Liquid Glass Desteği: Aktif</div>`;
+            }
+        }
+
+        function backToSettingsMain() {
+            document.getElementById('setting-page-content').classList.add('hidden');
+            document.getElementById('settings-main').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
