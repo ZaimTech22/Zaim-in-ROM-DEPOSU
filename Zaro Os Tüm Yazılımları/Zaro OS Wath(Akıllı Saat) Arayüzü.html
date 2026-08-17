@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZaroWatch OS - Advanced Smartwatch Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; overflow: hidden; background: #0f172a; }
+        .watch-case {
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.15);
+            background: linear-gradient(135deg, #27272a 0%, #09090b 100%);
+        }
+        .watch-screen {
+            background: #000;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9);
+            position: relative;
+            overflow: hidden;
+        }
+        .watch-icon { transition: transform 0.1s; cursor: pointer; }
+        .watch-icon:active { transform: scale(0.9); }
+        #notification-shade {
+            transition: transform 0.2s ease-in-out;
+            transform: translateY(-100%);
+        }
+        #notification-shade.active {
+            transform: translateY(0);
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col items-center justify-center bg-zinc-950 relative">
+
+    <!-- ARKA PLAN AMBİYANS -->
+    <div class="absolute inset-0 bg-cover bg-center opacity-30 blur-sm" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80')"></div>
+
+    <!-- FİZİKSEL AKILLI SAAT GÖVDESİ -->
+    <div class="relative z-10 flex items-center">
+        <!-- Sol Kordon -->
+        <div class="w-12 h-64 bg-zinc-900 rounded-l-3xl shadow-2xl border-l border-zinc-800"></div>
+
+        <!-- Saat Kasası -->
+        <div class="watch-case w-[320px] h-[380px] rounded-[48px] p-4 flex items-center justify-center relative border-4 border-zinc-700 shadow-2xl">
+            
+            <!-- Sağ Yan Düğme (Digital Crown) -->
+            <div class="absolute -right-3 top-16 w-3 h-14 bg-zinc-600 rounded-r-lg border border-zinc-500 shadow-md cursor-pointer" onclick="switchView('home')"></div>
+            <!-- Sağ Yan Güç Tuşu -->
+            <div class="absolute -right-2.5 top-36 w-2.5 h-12 bg-zinc-700 rounded-r-md cursor-pointer" onclick="switchView('home')"></div>
+
+            <!-- AKTİF SAAT EKRANI -->
+            <div id="watch-screen" class="watch-screen w-full h-full rounded-[38px] flex flex-col justify-between p-4 text-white relative" onmousedown="startDrag(event)" onmouseup="endDrag(event)" ontouchstart="startTouch(event)" ontouchend="endTouch(event)">
+
+                <!-- YUKARIDAN AŞAĞI KAYDIRILAN BİLDİRİM PANELİ -->
+                <div id="notification-shade" class="absolute inset-0 bg-zinc-900/95 backdrop-blur-md z-40 p-4 flex flex-col justify-between text-xs">
+                    <div class="space-y-2">
+                        <div class="font-bold text-zinc-400 border-b border-zinc-800 pb-1 flex justify-between"><span>Bildirimler</span><i class="fa-solid fa-bell text-yellow-400"></i></div>
+                        <div class="bg-zinc-800 p-2.5 rounded-xl space-y-0.5">
+                            <div class="font-bold text-emerald-400 text-[10px]">WhatsApp</div>
+                            <div class="text-[10px] text-zinc-300">MehmetAli: Akşam giriyoz mu?</div>
+                        </div>
+                        <div class="bg-zinc-800 p-2.5 rounded-xl space-y-0.5">
+                            <div class="font-bold text-sky-400 text-[10px]">Hava Durumu</div>
+                            <div class="text-[10px] text-zinc-300">İstanbul: 24°C Güneşli</div>
+                        </div>
+                    </div>
+                    <button onclick="toggleNotifications()" class="bg-zinc-800 hover:bg-zinc-700 py-1.5 rounded-xl font-bold text-center cursor-pointer">Kapat ⌃</button>
+                </div>
+
+                <!-- Üst Durum Çubuğu -->
+                <div class="flex justify-between items-center text-[10px] text-zinc-400 px-1 font-bold z-10">
+                    <span id="watch-clock">16:45</span>
+                    <div class="flex items-center gap-2">
+                        <span onclick="toggleNotifications()" class="cursor-pointer text-sky-400"><i class="fa-solid fa-chevron-down text-[9px]"></i></span>
+                        <div class="flex items-center gap-1 text-emerald-400">
+                            <i class="fa-solid fa-bolt text-[9px]"></i>
+                            <span>%94</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANA EKRAN / KADRAN (WATCHFACE) -->
+                <div id="screen-home" class="flex-1 flex flex-col items-center justify-center text-center space-y-3 z-10">
+                    <div id="watchface-display" class="space-y-1">
+                        <div id="wf-time" class="text-3xl font-black tracking-wider text-white">16:45</div>
+                        <div id="wf-date" class="text-[10px] text-zinc-400 font-bold">17 AĞUSTOS PAZARTESİ</div>
+                    </div>
+
+                    <div class="flex gap-2 w-full px-2">
+                        <div onclick="openWatchApp('heart')" class="flex-1 cursor-pointer bg-zinc-900/80 border border-zinc-800 p-2 rounded-2xl flex items-center gap-2 shadow-lg hover:border-red-500 transition">
+                            <i class="fa-solid fa-heart-pulse text-red-500 text-sm animate-pulse"></i>
+                            <div class="text-left">
+                                <div class="text-[8px] text-zinc-400 font-bold">Nabız</div>
+                                <div class="text-xs font-black">72 BPM</div>
+                            </div>
+                        </div>
+                        <div onclick="openWatchApp('steps')" class="flex-1 cursor-pointer bg-zinc-900/80 border border-zinc-800 p-2 rounded-2xl flex items-center gap-2 shadow-lg hover:border-emerald-500 transition">
+                            <i class="fa-solid fa-person-walking text-emerald-400 text-sm"></i>
+                            <div class="text-left">
+                                <div class="text-[8px] text-zinc-400 font-bold">Adım</div>
+                                <div class="text-xs font-black">6,480</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="switchView('menu')" class="bg-zinc-800 hover:bg-zinc-700 px-5 py-1.5 rounded-full text-xs font-bold text-zinc-200 shadow-md cursor-pointer transition">
+                        Uygulamalar ➔
+                    </button>
+                </div>
+
+                <!-- UYGULAMA MENÜSÜ (GRID) -->
+                <div id="screen-menu" class="hidden flex-1 flex flex-col justify-between py-2 z-10">
+                    <div class="text-center font-bold text-xs text-zinc-400 pb-1">ZaroWatch Menü</div>
+                    <div class="grid grid-cols-3 gap-3 items-center justify-center text-center px-1">
+                        <div onclick="openWatchApp('heart')" class="watch-icon flex flex-col items-center">
+                            <div class="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center text-lg text-white shadow-md"><i class="fa-solid fa-heart-pulse"></i></div>
+                            <span class="text-[9px] mt-1 text-zinc-300">Sağlık</span>
+                        </div>
+                        <div onclick="openWatchApp('steps')" class="watch-icon flex flex-col items-center">
+                            <div class="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-lg text-white shadow-md"><i class="fa-solid fa-person-walking"></i></div>
+                            <span class="text-[9px] mt-1 text-zinc-300">Adım</span>
+                        </div>
+                        <div onclick="openWatchApp('weather')" class="watch-icon flex flex-col items-center">
+                            <div class="w-12 h-12 bg-sky-600 rounded-2xl flex items-center justify-center text-lg text-white shadow-md"><i class="fa-solid fa-cloud-sun"></i></div>
+                            <span class="text-[9px] mt-1 text-zinc-300">Hava</span>
+                        </div>
+                        <div onclick="openWatchApp('music')" class="watch-icon flex flex-col items-center">
+                            <div class="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center text-lg text-white shadow-md"><i class="fa-solid fa-music"></i></div>
+                            <span class="text-[9px] mt-1 text-zinc-300">Müzik</span>
+                        </div>
+                        <div onclick="openWatchApp('settings')" class="watch-icon flex flex-col items-center">
+                            <div class="w-12 h-12 bg-zinc-700 rounded-2xl flex items-center justify-center text-lg text-white shadow-md"><i class="fa-solid fa-gear"></i></div>
+                            <span class="text-[9px] mt-1 text-zinc-300">Ayarlar</span>
+                        </div>
+                        <div onclick="switchView('home')" class="watch-icon flex flex-col items-center">
+                            <div class="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center text-lg text-white shadow-md"><i class="fa-solid fa-clock"></i></div>
+                            <span class="text-[9px] mt-1 text-zinc-300">Kadran</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UYGULAMA İÇERİK EKRANI -->
+                <div id="screen-app" class="hidden flex-1 flex flex-col justify-between py-2 z-10">
+                    <div class="flex justify-between items-center border-b border-zinc-800 pb-1">
+                        <button onclick="switchView('menu')" class="text-zinc-400 hover:text-white text-xs cursor-pointer"><i class="fa-solid fa-chevron-left"></i> Geri</button>
+                        <span id="app-title" class="text-xs font-bold text-yellow-400">Uygulama</span>
+                        <div></div>
+                    </div>
+                    <div id="app-body" class="flex-1 flex flex-col items-center justify-center text-center p-2 text-xs"></div>
+                </div>
+
+                <!-- Alt Navigasyon / Geri Butonu -->
+                <div class="flex justify-center pt-1 z-10">
+                    <button onclick="switchView('home')" class="w-24 h-1 bg-zinc-700 rounded-full hover:bg-zinc-500 cursor-pointer transition"></button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sağ Kordon -->
+        <div class="w-12 h-64 bg-zinc-900 rounded-r-3xl shadow-2xl border-r border-zinc-800"></div>
+    </div>
+
+    <script>
+        let currentWatchface = 'digital';
+        let startY = 0;
+
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('watch-clock').innerText = timeStr;
+            const wfTime = document.getElementById('wf-time');
+            if(wfTime) wfTime.innerText = timeStr;
+        }, 1000);
+
+        function toggleNotifications() {
+            document.getElementById('notification-shade').classList.toggle('active');
+        }
+
+        // Yukarıdan aşağı kaydırma (Swipe Down) algılama
+        function startDrag(e) { startY = e.clientY; }
+        function endDrag(e) {
+            if(e.clientY - startY > 50) document.getElementById('notification-shade').classList.add('active');
+        }
+        function startTouch(e) { startY = e.touches[0].clientY; }
+        function endTouch(e) {
+            if(e.changedTouches[0].clientY - startY > 50) document.getElementById('notification-shade').classList.add('active');
+        }
+
+        function switchView(view) {
+            document.getElementById('screen-home').classList.add('hidden');
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-app').classList.add('hidden');
+            document.getElementById('notification-shade').classList.remove('active');
+
+            if(view === 'home') document.getElementById('screen-home').classList.remove('hidden');
+            else if(view === 'menu') document.getElementById('screen-menu').classList.remove('hidden');
+            else if(view === 'app') document.getElementById('screen-app').classList.remove('hidden');
+        }
+
+        function openWatchApp(app) {
+            switchView('app');
+            const title = document.getElementById('app-title');
+            const body = document.getElementById('app-body');
+
+            if(app === 'heart') {
+                title.innerText = "Sağlık & Nabız";
+                body.innerHTML = `
+                    <div class="space-y-3 w-full">
+                        <div class="bg-zinc-900 p-2 rounded-xl flex justify-between items-center"><span class="text-zinc-400">Nabız:</span><b class="text-red-500">72 BPM</b></div>
+                        <div class="bg-zinc-900 p-2 rounded-xl flex justify-between items-center"><span class="text-zinc-400">Oksijen (SpO2):</span><b class="text-sky-400">%98</b></div>
+                        <div class="bg-zinc-900 p-2 rounded-xl flex justify-between items-center"><span class="text-zinc-400">Kan Basıncı:</span><b class="text-emerald-400">120/80 mmHg</b></div>
+                        <button onclick="alert('Ölçüm başlatıldı: Sensörler aktif!')" class="w-full bg-red-600 hover:bg-red-500 py-2 rounded-xl font-bold text-[10px] cursor-pointer">Yeni Ölçüm Yap</button>
+                    </div>`;
+            } else if(app === 'steps') {
+                title.innerText = "Adımsayar";
+                body.innerHTML = `
+                    <div class="text-4xl text-emerald-400 mb-2"><i class="fa-solid fa-person-walking"></i></div>
+                    <div class="text-lg font-black">6,480 Adım</div>
+                    <p class="text-[10px] text-zinc-400 mt-1">Günlük hedef: 10,000 adım (%64 tamamlandı)</p>`;
+            } else if(app === 'weather') {
+                title.innerText = "Hava Durumu";
+                body.innerHTML = `
+                    <div class="text-4xl text-sky-400 mb-2">☀️</div>
+                    <div class="text-lg font-black">24°C</div>
+                    <p class="text-[10px] text-zinc-400 mt-1">İstanbul, Güneşli (Nem: %45)</p>`;
+            } else if(app === 'music') {
+                title.innerText = "Müzik Çalar";
+                body.innerHTML = `
+                    <div class="text-3xl text-green-500 mb-2">🎵</div>
+                    <div class="font-bold text-[11px]">ZaroOS Chill Lo-Fi</div>
+                    <p class="text-[9px] text-zinc-400 mb-3">Telefon: Bağlı (Bluetooth)</p>
+                    <div class="flex gap-2 w-full">
+                        <button onclick="alert('Önceki şarkı')" class="flex-1 bg-zinc-800 py-2 rounded-xl cursor-pointer">⏮️</button>
+                        <button onclick="alert('Oynatılıyor / Durduruldu')" class="flex-2 bg-green-500 text-black py-2 rounded-xl font-bold cursor-pointer">Oynat / Durdur</button>
+                        <button onclick="alert('Sonraki şarkı')" class="flex-1 bg-zinc-800 py-2 rounded-xl cursor-pointer">⏭️</button>
+                    </div>`;
+            } else if(app === 'settings') {
+                title.innerText = "Saat Ayarları";
+                body.innerHTML = `
+                    <div class="space-y-2 w-full text-left">
+                        <div class="bg-zinc-900 p-2.5 rounded-xl flex justify-between items-center">
+                            <span>Kadran Stili</span>
+                            <button onclick="changeWatchface()" class="bg-purple-600 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer">Değiştir</button>
+                        </div>
+                        <div class="bg-zinc-900 p-2.5 rounded-xl flex justify-between items-center">
+                            <span>Ekran Parlaklığı</span>
+                            <span class="text-sky-400">%80</span>
+                        </div>
+                        <div class="bg-zinc-900 p-2.5 rounded-xl flex justify-between items-center">
+                            <span>Telefon Eşleme</span>
+                            <span class="text-emerald-400">Bağlı</span>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function changeWatchface() {
+            if(currentWatchface === 'digital') {
+                currentWatchface = 'minimal';
+                document.getElementById('wf-time').style.fontFamily = 'serif';
+                alert('Kadran stili Minimalist olarak değiştirildi.');
+            } else {
+                currentWatchface = 'digital';
+                document.getElementById('wf-time').style.fontFamily = 'sans-serif';
+                alert('Kadran stili Dijital olarak değiştirildi.');
+            }
+        }
+    </script>
+</body>
+</html>

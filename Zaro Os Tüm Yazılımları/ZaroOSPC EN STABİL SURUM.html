@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZaroOS 17.5 - Ultimate Masterpiece Edition v17</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; overflow: hidden; background: #000; }
+        .desktop-icon { transition: transform 0.1s; cursor: pointer; width: 72px; }
+        .desktop-icon:active { transform: scale(0.92); }
+        .window { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.7); position: absolute; }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .window-anim { animation: popIn 0.12s cubic-bezier(0, 0, 0.2, 1) forwards; }
+        #selection-box {
+            position: absolute;
+            background: rgba(0, 120, 215, 0.2);
+            border: 1px solid rgba(0, 120, 215, 0.8);
+            pointer-events: none;
+            display: none;
+            z-index: 15;
+        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 4px; }
+    </style>
+</head>
+<body id="os-desktop" class="h-screen w-screen overflow-hidden flex flex-col justify-between bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?auto=format&fit=crop&w=1920&q=80')">
+
+    <!-- KİLİT EKRANI -->
+    <div id="lock-screen" class="absolute inset-0 bg-cover bg-center z-[300] flex flex-col items-center justify-between p-12 text-white window-anim" style="background-image: url('https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?auto=format&fit=crop&w=1920&q=80')">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+        <div class="relative z-10 text-center mt-16 space-y-2">
+            <div id="lock-clock" class="text-6xl font-light tracking-wider">16:45</div>
+            <div id="lock-date" class="text-sm text-zinc-300 font-medium">17 Ağustos Pazartesi</div>
+        </div>
+        <div class="relative z-10 flex flex-col items-center space-y-4 mb-20 w-80">
+            <div class="w-24 h-24 bg-zinc-800 rounded-full border-2 border-zinc-600 flex items-center justify-center text-4xl shadow-2xl">👤</div>
+            <div class="font-bold text-base">ZaimTech22</div>
+            <input type="password" id="lock-password-input" placeholder="Oturum açmak için şifre girin..." class="bg-black/60 border border-zinc-600 px-4 py-2.5 rounded-2xl w-full text-xs text-center outline-none placeholder-zinc-400" onkeypress="if(event.key === 'Enter') unlockScreen()">
+            <button onclick="unlockScreen()" class="bg-red-600 hover:bg-red-500 w-full py-2.5 rounded-2xl text-xs font-bold shadow-lg cursor-pointer transition">Oturum Aç</button>
+        </div>
+        <div></div>
+    </div>
+
+    <!-- Windows Tarzı Mavi Seçim Kutusu -->
+    <div id="selection-box"></div>
+
+    <!-- MASAÜSTÜ SİMGELERİ -->
+    <div id="desktop-grid" class="flex-1 p-6 grid grid-cols-10 gap-4 items-start justify-start relative z-10 overflow-y-auto" oncontextmenu="showContextMenu(event)">
+        <div ondblclick="openWindow('explorer')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Dosyalar" draggable="true">
+            <div class="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-amber-400">📁</div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Dosyalar</span>
+        </div>
+        <div ondblclick="openWindow('browser')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Tarayıcı" draggable="true">
+            <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-blue-400">🌐</div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Tarayıcı</span>
+        </div>
+        <div ondblclick="openWindow('paint')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Paint" draggable="true">
+            <div class="w-12 h-12 bg-rose-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-rose-400">🎨</div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Paint</span>
+        </div>
+        <div ondblclick="openWindow('settings')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Ayarlar" draggable="true">
+            <div class="w-12 h-12 bg-zinc-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-zinc-400">⚙️</div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Ayarlar</span>
+        </div>
+        <div ondblclick="openWindow('games')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Oyun Merkezi" draggable="true">
+            <div class="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-red-400">🎮</div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Oyun Mer.</span>
+        </div>
+        <div ondblclick="openWindow('discord')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Sesli Sohbet" draggable="true">
+            <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-indigo-400"><i class="fa-brands fa-discord"></i></div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Sesli Sohbet</span>
+        </div>
+        <div ondblclick="openWindow('whatsapp')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="WhatsApp" draggable="true">
+            <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-emerald-300"><i class="fa-brands fa-whatsapp"></i></div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">WhatsApp</span>
+        </div>
+        <div ondblclick="openWindow('antivirus')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Antivirüs" draggable="true">
+            <div class="w-12 h-12 bg-blue-700 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-blue-400"><i class="fa-solid fa-shield-halved"></i></div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Antivirüs</span>
+        </div>
+        <div ondblclick="openWindow('recycle')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Çöp Kutusu" draggable="true">
+            <div class="w-12 h-12 bg-zinc-700 rounded-xl flex items-center justify-center text-xl text-zinc-300 shadow-xl border border-zinc-500"><i class="fa-solid fa-trash-can"></i></div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Çöp Kutusu</span>
+        </div>
+        <div ondblclick="openWindow('games')" class="desktop-icon flex flex-col items-center text-center group cursor-pointer" data-name="Minecraft" draggable="true">
+            <div class="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-emerald-400">⛏️</div>
+            <span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Minecraft</span>
+        </div>
+    </div>
+
+    <!-- SAĞ TIK BAĞLAM MENÜSÜ -->
+    <div id="context-menu" class="hidden absolute bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-[250] py-1 w-44 text-xs text-white">
+        <div onclick="createNewFolder()" class="px-4 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-2"><i class="fa-solid fa-folder-plus text-amber-400"></i> Yeni Klasör</div>
+        <div onclick="createNewTextFile()" class="px-4 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-2"><i class="fa-solid fa-file-lines text-sky-400"></i> Yeni Metin Belgesi</div>
+    </div>
+
+    <!-- ÖĞE SAĞ TIK MENÜSÜ -->
+    <div id="item-context-menu" class="hidden absolute bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-[250] py-1 w-44 text-xs text-white">
+        <div onclick="renameSelectedItem()" class="px-4 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-2"><i class="fa-solid fa-pen text-yellow-400"></i> Yeniden Adlandır</div>
+        <div onclick="deleteSelectedItem()" class="px-4 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-2 text-red-400"><i class="fa-solid fa-trash"></i> Sil</div>
+    </div>
+
+    <!-- PENCERE KATMANI -->
+    <div id="window-layer" class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center"></div>
+
+    <!-- GÖREV ÇUĞU (Çift tıklayınca Görev Yöneticisi açılır) -->
+    <div id="taskbar" ondblclick="openWindow('taskmanager')" class="w-full h-12 bg-zinc-950/90 backdrop-blur-md px-3 flex justify-between items-center z-50 border-t border-zinc-800 text-white cursor-default">
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleStartMenu()" class="w-9 h-9 bg-red-600 hover:bg-red-500 rounded-xl flex items-center justify-center font-black text-sm shadow-lg cursor-pointer transition">
+                Z
+            </button>
+            <button onclick="openWindow('paint')" class="w-8 h-8 bg-zinc-900 hover:bg-zinc-800 rounded-lg flex items-center justify-center text-xs text-rose-400 cursor-pointer" title="Paint"><i class="fa-solid fa-paintbrush"></i></button>
+            <button onclick="openWindow('settings')" class="w-8 h-8 bg-zinc-900 hover:bg-zinc-800 rounded-lg flex items-center justify-center text-xs text-zinc-300 cursor-pointer" title="Ayarlar"><i class="fa-solid fa-gear"></i></button>
+            <button onclick="openWindow('discord')" class="w-8 h-8 bg-zinc-900 hover:bg-zinc-800 rounded-lg flex items-center justify-center text-xs text-indigo-400 cursor-pointer" title="Sesli Sohbet"><i class="fa-brands fa-discord"></i></button>
+            <button onclick="openWindow('whatsapp')" class="w-8 h-8 bg-zinc-900 hover:bg-zinc-800 rounded-lg flex items-center justify-center text-xs text-emerald-400 cursor-pointer" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+            <button onclick="openWindow('explorer')" class="w-8 h-8 bg-zinc-900 hover:bg-zinc-800 rounded-lg flex items-center justify-center text-xs text-amber-400 cursor-pointer" title="Dosyalar"><i class="fa-solid fa-folder"></i></button>
+
+            <div class="bg-zinc-900/90 border border-zinc-700 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs w-56 ml-2">
+                <i class="fa-solid fa-magnifying-glass text-zinc-400"></i>
+                <input type="text" placeholder="ZaroOS'ta ara..." class="bg-transparent outline-none text-white w-full placeholder-zinc-500" onkeypress="if(event.key === 'Enter') handleSearch(this.value)">
+            </div>
+        </div>
+
+        <div id="taskbar-apps" class="flex items-center space-x-2"></div>
+
+        <div class="flex items-center space-x-4 text-xs font-medium">
+            <div onclick="toggleNotificationCenter()" class="flex items-center space-x-2 cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded-lg">
+                <i class="fa-solid fa-wifi text-sky-400"></i>
+                <span id="battery-status">%98</span>
+                <i class="fa-solid fa-battery-full text-emerald-400"></i>
+            </div>
+            <div id="taskbar-clock" class="text-xs font-bold text-zinc-200">16:40</div>
+            <button onclick="togglePowerModal()" class="w-8 h-8 bg-zinc-800 hover:bg-red-600 rounded-xl flex items-center justify-center text-red-400 hover:text-white cursor-pointer transition">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- BİLDİRİM MERKEZİ -->
+    <div id="notification-center" class="hidden absolute bottom-14 right-3 w-80 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 rounded-3xl z-[150] p-5 shadow-2xl text-xs space-y-4 window-anim">
+        <div class="font-bold text-sm text-zinc-200 border-b border-zinc-800 pb-2">Sistem Durumu ve Bildirimler</div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-zinc-800 p-3 rounded-2xl flex flex-col items-center justify-center space-y-1"><i class="fa-solid fa-wifi text-sky-400 text-lg"></i><span>Wi-Fi: Bağlı</span></div>
+            <div class="bg-zinc-800 p-3 rounded-2xl flex flex-col items-center justify-center space-y-1"><i class="fa-solid fa-battery-full text-emerald-400 text-lg"></i><span id="battery-label">%98</span></div>
+        </div>
+    </div>
+
+    <!-- BAŞLAT MENÜSÜ -->
+    <div id="start-menu" class="hidden absolute bottom-14 left-3 w-[420px] h-[480px] bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 rounded-3xl z-[100] p-6 shadow-2xl flex flex-col justify-between window-anim">
+        <div>
+            <div class="font-black text-sm text-red-500 mb-4 flex items-center gap-2">
+                <div class="w-6 h-6 bg-red-600 rounded-lg flex items-center justify-center text-white text-xs font-bold">Z</div>
+                ZaroOS 17.5 Desktop Edition
+            </div>
+            <div class="text-[10px] text-zinc-400 font-bold mb-3 uppercase tracking-widest">Hızlı Uygulamalar</div>
+            <div class="grid grid-cols-4 gap-3 text-center mb-4">
+                <div onclick="openWindow('paint'); toggleStartMenu();" class="flex flex-col items-center cursor-pointer p-2 hover:bg-zinc-800 rounded-xl">
+                    <span class="text-2xl text-rose-400"><i class="fa-solid fa-paintbrush"></i></span>
+                    <span class="text-[10px] mt-1">Paint</span>
+                </div>
+                <div onclick="openWindow('settings'); toggleStartMenu();" class="flex flex-col items-center cursor-pointer p-2 hover:bg-zinc-800 rounded-xl">
+                    <span class="text-2xl text-zinc-300"><i class="fa-solid fa-gear"></i></span>
+                    <span class="text-[10px] mt-1">Ayarlar</span>
+                </div>
+                <div onclick="openWindow('discord'); toggleStartMenu();" class="flex flex-col items-center cursor-pointer p-2 hover:bg-zinc-800 rounded-xl">
+                    <span class="text-2xl text-indigo-400"><i class="fa-brands fa-discord"></i></span>
+                    <span class="text-[10px] mt-1">Sesli Sohbet</span>
+                </div>
+                <div onclick="openWindow('recycle'); toggleStartMenu();" class="flex flex-col items-center cursor-pointer p-2 hover:bg-zinc-800 rounded-xl">
+                    <span class="text-2xl text-zinc-400"><i class="fa-solid fa-trash-can"></i></span>
+                    <span class="text-[10px] mt-1">Çöp Kutusu</span>
+                </div>
+            </div>
+        </div>
+        <div class="pt-3 border-t border-zinc-800 flex justify-between items-center text-xs">
+            <span class="font-bold text-zinc-300">ZaimTech22</span>
+            <button onclick="togglePowerModal(); toggleStartMenu();" class="text-red-400 hover:text-red-300 font-bold cursor-pointer flex items-center gap-1"><i class="fa-solid fa-power-off"></i> Kapat</button>
+        </div>
+    </div>
+
+    <!-- GÜÇ MODALI -->
+    <div id="power-modal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center window-anim">
+        <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl w-72 text-center space-y-4 shadow-2xl">
+            <div class="text-3xl">🔌</div>
+            <h3 class="font-bold text-sm text-zinc-200">Bilgisayarı Kapat / Kilitle</h3>
+            <div class="space-y-2">
+                <button onclick="lockScreen()" class="w-full bg-zinc-800 hover:bg-zinc-700 p-3 rounded-2xl font-medium text-xs text-white cursor-pointer transition"><i class="fa-solid fa-lock"></i> Bilgisayarı Kilitle</button>
+                <button onclick="location.reload()" class="w-full bg-zinc-800 hover:bg-zinc-700 p-3 rounded-2xl font-medium text-xs text-white cursor-pointer transition">Yeniden Başlat</button>
+                <button onclick="document.body.innerHTML='<div class=\'h-screen w-screen bg-black flex items-center justify-center text-zinc-600 font-mono text-sm\'>Sistem Kapatıldı.</div>'" class="w-full bg-red-600 hover:bg-red-500 p-3 rounded-2xl font-medium text-xs text-white cursor-pointer transition">Sistemi Kapat</button>
+            </div>
+            <button onclick="togglePowerModal()" class="text-xs text-zinc-400 cursor-pointer">İptal</button>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = "";
+        let currentSystemPassword = "";
+        let selectedDesktopItem = null;
+        let trashBinItems = [];
+        let batteryLevel = 98;
+        let systemHasVirus = true;
+
+        let discordMessages = [
+            { sender: "MehmetAliPaşa_Azak", text: "Selam beyler, akşam Minecraft girelim mi?" },
+            { sender: "Luned.tr1", text: "Aynen kanka, saat 20:00'de herkes online olsun." },
+            { sender: "RjKaan3", text: "Ben de geliyorum, madene ineriz." }
+        ];
+        let whatsappMessages = [
+            { sender: "uçançocuktrofficial", text: "Akşam Minecraft'ta buluşalım." },
+            { sender: "Y.ali.fx1", text: "Tamamdır kanka, kurucuyum ben." }
+        ];
+
+        async function callGemini(promptText) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: promptText }] }] };
+            for (let i = 0; i < 5; i++) {
+                try {
+                    let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    let data = await res.json();
+                    let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                } catch (e) {
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+            return "Sistem şu an yanıt veremiyor!";
+        }
+
+        // Şarj Azalma Mekaniği
+        setInterval(() => {
+            if(batteryLevel > 5) batteryLevel--;
+            document.getElementById('battery-status').innerText = `%${batteryLevel}`;
+            document.getElementById('battery-label').innerText = `%${batteryLevel}`;
+        }, 30000);
+
+        // Masaüstü Seçim ve Sağ Tık
+        const desktopGrid = document.getElementById('desktop-grid');
+        const selectionBox = document.getElementById('selection-box');
+        const contextMenu = document.getElementById('context-menu');
+        const itemContextMenu = document.getElementById('item-context-menu');
+        let isSelecting = false, startX, startY;
+
+        desktopGrid.onmousedown = (e) => {
+            contextMenu.classList.add('hidden');
+            itemContextMenu.classList.add('hidden');
+            if(e.button === 2) return;
+            if(e.target !== desktopGrid) return;
+            isSelecting = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            selectionBox.style.left = startX + 'px';
+            selectionBox.style.top = startY + 'px';
+            selectionBox.style.width = '0px';
+            selectionBox.style.height = '0px';
+            selectionBox.style.display = 'block';
+        };
+
+        function showContextMenu(e) {
+            e.preventDefault();
+            contextMenu.classList.add('hidden');
+            itemContextMenu.classList.add('hidden');
+
+            let target = e.target.closest('.desktop-icon');
+            if(target) {
+                selectedDesktopItem = target;
+                itemContextMenu.style.left = e.clientX + 'px';
+                itemContextMenu.style.top = e.clientY + 'px';
+                itemContextMenu.classList.remove('hidden');
+            } else {
+                contextMenu.style.left = e.clientX + 'px';
+                contextMenu.style.top = e.clientY + 'px';
+                contextMenu.classList.remove('hidden');
+            }
+        }
+
+        function createNewFolder() {
+            contextMenu.classList.add('hidden');
+            const div = document.createElement('div');
+            div.className = "desktop-icon flex flex-col items-center text-center group cursor-pointer";
+            div.innerHTML = `<div class="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-xl text-white shadow-xl border border-amber-400">📁</div><span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Yeni Klasör</span>`;
+            div.ondblclick = () => openWindow('explorer');
+            desktopGrid.appendChild(div);
+        }
+
+        function createNewTextFile() {
+            contextMenu.classList.add('hidden');
+            const div = document.createElement('div');
+            div.className = "desktop-icon flex flex-col items-center text-center group cursor-pointer";
+            div.innerHTML = `<div class="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center text-xl text-sky-400 shadow-xl border border-zinc-650">📄</div><span class="text-[11px] mt-1 font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Metin Belgesi</span>`;
+            div.ondblclick = () => openWindow('notes');
+            desktopGrid.appendChild(div);
+        }
+
+        function renameSelectedItem() {
+            itemContextMenu.classList.add('hidden');
+            if(!selectedDesktopItem) return;
+            let span = selectedDesktopItem.querySelector('span');
+            let newName = prompt("Yeni ad girin:", span.innerText);
+            if(newName) span.innerText = newName;
+        }
+
+        function deleteSelectedItem() {
+            itemContextMenu.classList.add('hidden');
+            if(selectedDesktopItem) {
+                let name = selectedDesktopItem.querySelector('span').innerText;
+                trashBinItems.push(name);
+                selectedDesktopItem.remove();
+                selectedDesktopItem = null;
+            }
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if(!isSelecting) return;
+            let width = Math.abs(e.clientX - startX);
+            let height = Math.abs(e.clientY - startY);
+            selectionBox.style.left = Math.min(e.clientX, startX) + 'px';
+            selectionBox.style.top = Math.min(e.clientY, startY) + 'px';
+            selectionBox.style.width = width + 'px';
+            selectionBox.style.height = height + 'px';
+        });
+
+        window.addEventListener('mouseup', () => {
+            if(isSelecting) {
+                isSelecting = false;
+                selectionBox.style.display = 'none';
+            }
+        });
+
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('taskbar-clock').innerText = timeStr;
+            const lockClock = document.getElementById('lock-clock');
+            if(lockClock) lockClock.innerText = timeStr;
+        }, 1000);
+
+        function toggleStartMenu() {
+            document.getElementById('start-menu').classList.toggle('hidden');
+            document.getElementById('notification-center').classList.add('hidden');
+        }
+
+        function toggleNotificationCenter() {
+            document.getElementById('notification-center').classList.toggle('hidden');
+            document.getElementById('start-menu').classList.add('hidden');
+        }
+
+        function togglePowerModal() {
+            document.getElementById('power-modal').classList.toggle('hidden');
+        }
+
+        function lockScreen() {
+            togglePowerModal();
+            document.getElementById('lock-screen').classList.remove('hidden');
+        }
+
+        function unlockScreen() {
+            const pwd = document.getElementById('lock-password-input').value;
+            if(currentSystemPassword && pwd !== currentSystemPassword) {
+                alert('Yanlış şifre!');
+                return;
+            }
+            document.getElementById('lock-screen').classList.add('hidden');
+            document.getElementById('lock-password-input').value = '';
+        }
+
+        function handleSearch(query) {
+            openBrowserSearch(query);
+        }
+
+        function openBrowserSearch(searchTerm) {
+            openWindow('browser');
+            setTimeout(() => {
+                const input = document.getElementById('browser-url-input');
+                if(input) {
+                    input.value = searchTerm;
+                    renderBrowserContent(searchTerm);
+                }
+            }, 100);
+        }
+
+        let openWindowsCount = 0;
+        let activeHighestZ = 30;
+
+        function openWindow(appId) {
+            const layer = document.getElementById('window-layer');
+            const taskbar = document.getElementById('taskbar-apps');
+            
+            const existingWin = document.getElementById('win-' + appId);
+            if(existingWin) {
+                activeHighestZ++;
+                existingWin.style.zIndex = activeHighestZ;
+                existingWin.style.display = 'flex';
+                return;
+            }
+
+            let winTitle = "Uygulama";
+            let winContent = "";
+
+            if(appId === 'recycle') {
+                winTitle = "Çöp Kutusu";
+                let listHtml = trashBinItems.length === 0 ? '<div class="text-zinc-500 text-center mt-12">Çöp kutusu boş.</div>' : trashBinItems.map(item => `<div class="bg-zinc-800 p-2 rounded-xl mb-2 flex justify-between items-center"><span>🗑️ ${item}</span><button onclick="trashBinItems = trashBinItems.filter(i => i !== '${item}'); openWindow('recycle');" class="bg-red-600 px-3 py-1 rounded text-xs font-bold cursor-pointer">Kalıcı Sil</button></div>`).join('');
+                winContent = `
+                    <div class="p-6 bg-zinc-900 text-xs space-y-4 flex-1 overflow-y-auto text-white">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                            <span class="font-bold text-zinc-300">Silinen Öğeler (${trashBinItems.length})</span>
+                            <button onclick="trashBinItems = []; openWindow('recycle');" class="bg-red-600 px-3 py-1.5 rounded-xl font-bold cursor-pointer">Çöp Kutusunu Boşalt</button>
+                        </div>
+                        <div class="space-y-2">${listHtml}</div>
+                    </div>`;
+            } else if(appId === 'paint') {
+                winTitle = "Zaro Paint";
+                winContent = `
+                    <div class="bg-zinc-800 p-2 flex items-center gap-3 border-b border-zinc-700 text-xs">
+                        <span class="font-bold text-zinc-300">Renk:</span>
+                        <input type="color" id="paint-color" value="#000000" class="w-8 h-6 bg-transparent cursor-pointer">
+                        <span class="font-bold text-zinc-300 ml-2">Boyut:</span>
+                        <input type="range" id="paint-size" min="2" max="30" value="5" class="accent-rose-500 cursor-pointer">
+                        <button onclick="clearCanvas()" class="ml-auto bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded text-white font-bold cursor-pointer">Temizle</button>
+                    </div>
+                    <div class="flex-1 bg-white cursor-crosshair relative overflow-hidden">
+                        <canvas id="drawing-canvas" class="w-full h-full block"></canvas>
+                    </div>`;
+            } else if(appId === 'settings') {
+                winTitle = "ZaroOS Ayarlar";
+                winContent = `
+                    <div class="p-6 bg-zinc-900 text-xs space-y-6 flex-1 overflow-y-auto text-white">
+                        <div>
+                            <h3 class="font-bold text-sm text-yellow-400 mb-2"><i class="fa-solid fa-image"></i> Masaüstü Duvar Kağıdı Değiştir</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div onclick="changeWallpaper('https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?auto=format&fit=crop&w=1920&q=80')" class="h-28 bg-cover bg-center rounded-2xl border-2 border-zinc-700 hover:border-yellow-400 cursor-pointer flex items-end p-2 font-bold bg-black/45">Karanlık Orman</div>
+                                <div onclick="changeWallpaper('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80')" class="h-28 bg-cover bg-center rounded-2xl border-2 border-zinc-700 hover:border-yellow-400 cursor-pointer flex items-end p-2 font-bold bg-black/45">Tropikal Plaj</div>
+                            </div>
+                        </div>
+                    </div>`;
+            } else if(appId === 'discord') {
+                winTitle = "Discord Sesli Sohbet";
+                let discordHtml = discordMessages.map(m => `<div><b>${m.sender}:</b> ${m.text}</div>`).join('');
+                winContent = `
+                    <div class="bg-indigo-900 text-white h-full flex flex-col p-6 space-y-4">
+                        <div class="flex gap-3 border-b border-indigo-800 pb-2 font-bold text-xs">
+                            <span class="text-indigo-300"># genel-sohbet</span>
+                            <span class="text-indigo-400"># teknoloji-grubu</span>
+                        </div>
+                        <div id="discord-log" class="bg-indigo-950 p-4 rounded-xl flex-1 overflow-y-auto text-xs space-y-2">
+                            ${discordHtml}
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="discord-input" placeholder="Kanala mesaj yaz..." class="bg-indigo-950 border border-indigo-700 p-2 rounded-xl flex-1 text-xs outline-none text-white" onkeypress="if(event.key==='Enter') sendDiscordMsg(this.value)">
+                            <button onclick="sendDiscordMsg(document.getElementById('discord-input').value)" class="bg-indigo-600 px-4 py-2 rounded-xl font-bold text-xs cursor-pointer">Gönder</button>
+                        </div>
+                    </div>`;
+            } else if(appId === 'whatsapp') {
+                winTitle = "WhatsApp Web";
+                let waHtml = whatsappMessages.map(m => `<div><b>${m.sender}:</b> ${m.text}</div>`).join('');
+                winContent = `
+                    <div class="bg-zinc-900 text-white h-full flex flex-col p-4 space-y-3">
+                        <div class="font-bold text-emerald-400 text-xs border-b border-zinc-800 pb-2">Sohbetler: MehmetAliPaşa_Azak, Luned.tr1, Y.ali.fx1, RjKaan3, uçançocuktrofficial</div>
+                        <div id="wa-chat" class="bg-zinc-950 p-3 rounded-xl flex-1 overflow-y-auto text-xs space-y-2">
+                            ${waHtml}
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="wa-input" placeholder="Mesaj yaz..." class="bg-zinc-800 border border-zinc-700 p-2 rounded-xl flex-1 text-xs outline-none text-white" onkeypress="if(event.key==='Enter') sendWaMsg(this.value)">
+                            <button onclick="sendWaMsg(document.getElementById('wa-input').value)" class="bg-emerald-600 px-4 py-2 rounded-xl font-bold text-xs cursor-pointer">Gönder</button>
+                        </div>
+                    </div>`;
+            } else if(appId === 'games') {
+                winTitle = "ZaroOS Oyun Merkezi";
+                winContent = `
+                    <div class="p-6 bg-zinc-900 text-xs space-y-4 flex-1 overflow-y-auto text-white">
+                        <div class="font-bold text-yellow-400 text-sm mb-2">Çevrimiçi Çok Oyunculu Odalar</div>
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div onclick="alert('Minecraft sunucusuna bağlanıldı: MehmetAliPaşa_Azak, Luned.tr1 ve ZaimTech22 çevrimiçi oyunda!')" class="bg-zinc-800 p-4 rounded-2xl cursor-pointer hover:bg-zinc-700 space-y-1"><div class="text-2xl">⛏️</div><div class="font-bold text-white">Minecraft (Çevrimiçi)</div></div>
+                            <div onclick="alert('Robby.io odasına girildi!')" class="bg-zinc-800 p-4 rounded-2xl cursor-pointer hover:bg-zinc-700 space-y-1"><div class="text-2xl">🎮</div><div class="font-bold text-white">Robby.io</div></div>
+                            <div onclick="alert('CS 1.6 maçına bağlanılıyor... ZaimTech22 MVP!')" class="bg-zinc-800 p-4 rounded-2xl cursor-pointer hover:bg-zinc-700 space-y-1"><div class="text-2xl">🎯</div><div class="font-bold text-white">CS 1.6 Pro</div></div>
+                        </div>
+                    </div>`;
+            } else if(appId === 'explorer') {
+                winTitle = "Dosya Gezgini - Bu Bilgisayar";
+                winContent = `
+                    <div class="p-5 bg-zinc-900 text-xs space-y-4 flex-1 overflow-y-auto text-white">
+                        <div class="font-bold text-zinc-400 uppercase tracking-widest text-[10px]">Sabit Disk Sürücüleri</div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-zinc-800 p-4 rounded-2xl border border-zinc-700 space-y-2">
+                                <div class="font-bold text-amber-400"><i class="fa-solid fa-hard-drive"></i> Yerel Disk (C:)</div>
+                                <div class="w-full bg-zinc-700 h-2 rounded-full overflow-hidden"><div class="bg-blue-500 h-full w-[65%]"></div></div>
+                                <div class="text-[10px] text-zinc-400">120 GB / 250 GB Boş</div>
+                            </div>
+                            <div class="bg-zinc-800 p-4 rounded-2xl border border-zinc-700 space-y-2">
+                                <div class="font-bold text-amber-400"><i class="fa-solid fa-hard-drive"></i> Yerel Disk (D:) - Oyunlar</div>
+                                <div class="w-full bg-zinc-700 h-2 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full w-[40%]"></div></div>
+                                <div class="text-[10px] text-zinc-400">380 GB / 500 GB Boş</div>
+                            </div>
+                        </div>
+                    </div>`;
+            } else if(appId === 'browser') {
+                winTitle = "Zaro Browser";
+                winContent = `
+                    <div class="bg-zinc-800 p-2 flex gap-2 border-b border-zinc-700 text-xs">
+                        <input type="text" id="browser-url-input" value="https://www.google.com" class="bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg flex-1 text-white outline-none" onkeypress="if(event.key==='Enter') renderBrowserContent(this.value)">
+                        <button onclick="renderBrowserContent(document.getElementById('browser-url-input').value)" class="bg-blue-600 px-4 py-1.5 rounded-lg font-bold text-white cursor-pointer">Git</button>
+                    </div>
+                    <div id="browser-viewport" class="p-6 bg-zinc-900 flex-1 flex flex-col items-center justify-center text-center space-y-4 overflow-y-auto text-white">
+                        <h1 class="text-4xl font-black text-blue-500">Google</h1>
+                        <input type="text" placeholder="Google'da ara veya URL yaz..." class="w-full max-w-md bg-zinc-800 border border-zinc-700 px-4 py-3 rounded-2xl text-xs outline-none text-white" onkeypress="if(event.key==='Enter') { document.getElementById('browser-url-input').value=this.value; renderBrowserContent(this.value); }">
+                    </div>`;
+            } else if(appId === 'antivirus') {
+                winTitle = "Zaro Defender Antivirüs";
+                winContent = `
+                    <div id="antivirus-viewport" class="p-6 bg-zinc-900 text-xs space-y-4 flex-1 overflow-y-auto text-white flex flex-col items-center justify-center text-center">
+                        <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-4xl shadow-xl animate-pulse"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h3 class="font-bold text-base text-blue-400">Sistem Tarama Merkezi</h3>
+                        <p class="text-zinc-400 text-xs">Bilgisayarınızdaki potansiyel tehlikeleri ve reklam virüslerini tarayın.</p>
+                        <button onclick="runVirusScan()" class="bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-2xl font-bold cursor-pointer shadow-lg">Virüs Taraması Başlat</button>
+                    </div>`;
+            } else if(appId === 'taskmanager') {
+                winTitle = "ZaroOS Görev Yöneticisi";
+                let virusStatusHtml = systemHasVirus ? `<div class="bg-red-900/60 p-3 rounded-xl text-red-300 flex justify-between items-center font-bold"><span>⚠️ Adware_Cipso.exe (Arka plan virüsü)</span><span class="text-xs">Aktif</span></div>` : `<div class="text-emerald-400 font-bold">Tehdit bulunmuyor.</div>`;
+                winContent = `
+                    <div class="p-6 bg-zinc-900 text-xs space-y-4 flex-1 overflow-y-auto text-white">
+                        <div class="font-bold text-sm text-yellow-400">Arka Planda Çalışan Sistem Uygulamaları ve İşlemler</div>
+                        <div class="bg-zinc-800 p-4 rounded-2xl space-y-3 border border-zinc-700">
+                            <div class="flex justify-between items-center"><span>ZaroOS Explorer (Sistem)</span><span class="text-sky-400 font-bold">%4 CPU</span></div>
+                            <div class="flex justify-between items-center"><span>Zaro Defender (Güvenlik)</span><span class="text-sky-400 font-bold">%1 CPU</span></div>
+                            <div class="flex justify-between items-center"><span>Discord Ses Servisi</span><span class="text-indigo-400 font-bold">%2 CPU</span></div>
+                            ${virusStatusHtml}
+                        </div>
+                        <button onclick="systemHasVirus = false; alert('Arka plandaki şüpheli virüs başarıyla sonlandırıldı!'); openWindow('taskmanager');" class="bg-red-600 hover:bg-red-500 px-4 py-2.5 rounded-xl font-bold cursor-pointer text-white">Seçili İşi Sonlandır / Virüsü Sil</button>
+                    </div>`;
+            }
+
+            activeHighestZ++;
+            const win = document.createElement('div');
+            win.id = 'win-' + appId;
+            win.className = "window absolute w-[850px] h-[520px] bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden flex flex-col pointer-events-auto window-anim shadow-2xl";
+            win.style.top = (40 + openWindowsCount * 25) + 'px';
+            win.style.left = (80 + openWindowsCount * 30) + 'px';
+            win.style.zIndex = activeHighestZ;
+
+            win.innerHTML = `
+                <div class="window-header w-full h-10 bg-zinc-950 border-b border-zinc-800 px-4 flex justify-between items-center text-xs font-bold text-zinc-300 select-none cursor-move">
+                    <span>${winTitle}</span>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="minimizeWindow('${appId}')" class="w-6 h-6 hover:bg-zinc-800 rounded flex items-center justify-center cursor-pointer">🗕</button>
+                        <button onclick="toggleMaximizeWindow('${appId}')" class="w-6 h-6 hover:bg-zinc-800 rounded flex items-center justify-center cursor-pointer">🗖</button>
+                        <button onclick="closeWindow('${appId}')" class="w-6 h-6 hover:bg-red-600 hover:text-white rounded flex items-center justify-center cursor-pointer">✕</button>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col overflow-hidden">${winContent}</div>
+            `;
+
+            const header = win.querySelector('.window-header');
+            let isDragging = false, startX, startY;
+
+            header.onmousedown = (e) => {
+                isDragging = true;
+                startX = e.clientX - win.offsetLeft;
+                startY = e.clientY - win.offsetTop;
+                activeHighestZ++;
+                win.style.zIndex = activeHighestZ;
+            };
+
+            document.onmousemove = (e) => {
+                if(!isDragging) return;
+                win.style.left = (e.clientX - startX) + 'px';
+                win.style.top = Math.max(0, e.clientY - startY) + 'px';
+            };
+
+            document.onmouseup = () => { isDragging = false; };
+
+            layer.appendChild(win);
+
+            const tab = document.createElement('button');
+            tab.id = 'tab-' + appId;
+            tab.className = "bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-xl text-xs font-bold text-white flex items-center gap-2 cursor-pointer border border-zinc-700";
+            tab.innerHTML = `<span>${winTitle.split(' - ')[0]}</span>`;
+            tab.onclick = () => {
+                activeHighestZ++;
+                win.style.zIndex = activeHighestZ;
+                if(win.style.display === 'none') win.style.display = 'flex';
+                else win.style.display = 'none';
+            };
+            taskbar.appendChild(tab);
+
+            openWindowsCount++;
+
+            if(appId === 'paint') {
+                setTimeout(() => {
+                    const canvas = document.getElementById('drawing-canvas');
+                    if(!canvas) return;
+                    canvas.width = canvas.parentElement.clientWidth;
+                    canvas.height = canvas.parentElement.clientHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    let painting = false;
+                    canvas.onmousedown = (e) => { painting = true; draw(e); };
+                    canvas.onmouseup = () => { painting = false; ctx.beginPath(); };
+                    canvas.onmousemove = (e) => { if(painting) draw(e); };
+
+                    function draw(e) {
+                        ctx.lineWidth = document.getElementById('paint-size').value;
+                        ctx.lineCap = 'round';
+                        ctx.strokeStyle = document.getElementById('paint-color').value;
+
+                        const rect = canvas.getBoundingClientRect();
+                        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                    }
+                }, 100);
+            }
+        }
+
+        async function runVirusScan() {
+            const vp = document.getElementById('antivirus-viewport');
+            if(!vp) return;
+            vp.innerHTML = `<div class="text-yellow-400 font-bold text-sm animate-pulse">🔍 Sistem dosyaları ve arka plan servisleri taranıyor...</div>`;
+            setTimeout(() => {
+                if(systemHasVirus) {
+                    vp.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="text-red-400 font-bold text-sm">⚠️ Tehlike Tespit Edildi!</div>
+                            <p class="text-zinc-300 text-xs">Arka planda gizlenen bir reklam virüsü (Adware_Cipso.exe) bulundu!</p>
+                            <button onclick="systemHasVirus = false; alert('Virüs başarıyla karantinaya alındı ve temizlendi!'); openWindow('antivirus');" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-2.5 rounded-xl font-bold cursor-pointer text-white">Hemen Temizle</button>
+                        </div>`;
+                } else {
+                    vp.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="text-emerald-400 font-bold text-sm">✅ Tertemiz!</div>
+                            <p class="text-zinc-300 text-xs">Sistemde herhangi bir tehdit veya virüs bulunamadı.</p>
+                        </div>`;
+                }
+            }, 2500);
+        }
+
+        async function sendDiscordMsg(msg) {
+            if(!msg.trim()) return;
+            discordMessages.push({ sender: "ZaimTech22", text: msg });
+            const log = document.getElementById('discord-log');
+            log.innerHTML += `<div><b>ZaimTech22:</b> ${msg}</div>`;
+            document.getElementById('discord-input').value = '';
+
+            let botReply = await callGemini(`Sen Discord sesli sohbet kanalında ZaimTech22 ile konuşan bir arkadaşsın (MehmetAliPaşa_Azak, Luned.tr1, RjKaan3). Kullanıcının şu mesajına esprili, samimi Türkçe bir cevap ver: "${msg}"`);
+            let randomFriend = ['MehmetAliPaşa_Azak', 'Luned.tr1', 'RjKaan3'][Math.floor(Math.random() * 3)];
+            discordMessages.push({ sender: randomFriend, text: botReply });
+            log.innerHTML += `<div><b class="text-indigo-300">${randomFriend}:</b> ${botReply}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function sendWaMsg(msg) {
+            if(!msg.trim()) return;
+            whatsappMessages.push({ sender: "ZaimTech22", text: msg });
+            const chat = document.getElementById('wa-chat');
+            chat.innerHTML += `<div><b>ZaimTech22:</b> ${msg}</div>`;
+            document.getElementById('wa-input').value = '';
+
+            let botReply = await callGemini(`Sen WhatsApp'ta ZaimTech22 ile mesajlaşan bir arkadaşsın. Kullanıcının şu mesajına kısa, samimi Türkçe bir cevap ver: "${msg}"`);
+            let randomPerson = ['MehmetAliPaşa_Azak', 'uçançocuktrofficial', 'Y.ali.fx1'][Math.floor(Math.random() * 3)];
+            whatsappMessages.push({ sender: randomPerson, text: botReply });
+            chat.innerHTML += `<div><b class="text-emerald-300">${randomPerson}:</b> ${botReply}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function renderBrowserContent(query) {
+            const viewport = document.getElementById('browser-viewport');
+            if(!viewport) return;
+            let q = query.toLowerCase();
+
+            let aiAnswer = await callGemini(`Kullanıcının şu sorusuna Google araması tarzında net, doğru ve profesyonel bir Türkçe cevap ver: "${query}"`);
+
+            if(q.includes('youtube')) {
+                viewport.innerHTML = `
+                    <div class="w-full text-left font-bold text-red-500 mb-4 text-sm flex items-center gap-2"><i class="fa-brands fa-youtube text-lg"></i> YouTube</div>
+                    <div class="grid grid-cols-2 gap-4 w-full">
+                        <div onclick="alert('Video oynatılıyor: ZaroOS 17.5 Tanıtım')" class="bg-zinc-800 p-3 rounded-xl cursor-pointer space-y-2 hover:bg-zinc-700 transition">
+                            <div class="h-28 bg-zinc-700 rounded-lg flex items-center justify-center text-xl text-white font-bold bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?auto=format&fit=crop&w=400&q=80')">▶️</div>
+                            <div class="font-bold text-xs text-left">ZaroOS 17.5 Tanıtım Videosu</div>
+                        </div>
+                    </div>`;
+            } else {
+                viewport.innerHTML = `
+                    <div class="w-full text-left space-y-4">
+                        <div class="bg-zinc-800 p-4 rounded-2xl border border-blue-500/40 text-xs text-zinc-200">💡 <b>Gemini AI Cevabı:</b> ${aiAnswer}</div>
+                        <div class="font-bold text-sm text-blue-400">Arama Sonuçları: "${query}"</div>
+                    </div>`;
+            }
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('drawing-canvas');
+            if(canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function closeWindow(appId) {
+            const win = document.getElementById('win-' + appId);
+            const tab = document.getElementById('tab-' + appId);
+            if(win) win.remove();
+            if(tab) tab.remove();
+        }
+
+        function minimizeWindow(appId) {
+            const win = document.getElementById('win-' + appId);
+            if(win) win.style.display = 'none';
+        }
+
+        function toggleMaximizeWindow(appId) {
+            const win = document.getElementById('win-' + appId);
+            if(!win) return;
+            if(!win.dataset.maximized) {
+                win.dataset.prevLeft = win.style.left;
+                win.dataset.prevTop = win.style.top;
+                win.dataset.prevWidth = win.style.width;
+                win.dataset.prevHeight = win.style.height;
+
+                win.style.left = '0px';
+                win.style.top = '0px';
+                win.style.width = '100vw';
+                win.style.height = 'calc(100vh - 48px)';
+                win.dataset.maximized = 'true';
+            } else {
+                win.style.left = win.dataset.prevLeft;
+                win.style.top = win.dataset.prevTop;
+                win.style.width = win.dataset.prevWidth;
+                win.style.height = win.dataset.prevHeight;
+                delete win.dataset.maximized;
+            }
+        }
+    </script>
+</body>
+</html>
